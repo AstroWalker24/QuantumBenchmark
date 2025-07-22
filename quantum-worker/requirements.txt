@@ -1,0 +1,9 @@
+Flask
+qiskit
+qiskit-aer
+pennylane 
+cirq
+numpy 
+python-dotenv
+
+
