@@ -1,4 +1,4 @@
-./quantum-worker/.env
-./quantum-worker/venv
-./quantum-worker/services/__pycache__
+quantum-worker/.env
+quantum-worker/venv
+quantum-worker/services/__pycache__
 
