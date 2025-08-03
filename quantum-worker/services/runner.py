@@ -1,26 +1,27 @@
-import time 
-import pennylane as pnl 
-import cirq as cq 
+import time
+import pennylane as pnl
+import cirq as cq
 import numpy as np
 from qiskit import QuantumCircuit, transpile
 from qiskit_aer import AerSimulator
 from qiskit.quantum_info import Operator
 
 RUNNER_MAPPINGS = {
-    "qiskit" : "run_qiskit",
-    "cirq" : "run_cirq",
-    "pennylane" : "run_pennylane",
+    "qiskit": "run_qiskit",
+    "cirq": "run_cirq",
+    "pennylane": "run_pennylane",
 }
+
 
 def run_benchmark_on_all(qasm_code: str, simulators: list) -> list:
     results = []
 
     for simulator in simulators:
-        sim_lower  = simulator.lower()
+        sim_lower = simulator.lower()
         if sim_lower in RUNNER_MAPPINGS:
             runner_func = globals()[RUNNER_MAPPINGS[sim_lower]]
             results.append(runner_func(qasm_code))
-        
+
     return results
 
 
@@ -39,27 +40,32 @@ def run_cirq(qasm_code):
 
         circuit = cq.Circuit(gate(*qubits))
         simulator = cq.Simulator()
-    
+
         start_time = time.time()
         result = simulator.simulate(circuit)
-        exec_time = time.time() - start_time 
+        exec_time = time.time() - start_time
 
-        state_vector = result.final_state_vector.tolist()
+        state_vector = []
+        for complex_num in result.final_state_vector:
+            state_vector.append(
+                {"real": float(complex_num.real), "imag": float(complex_num.imag)}
+            )
 
         return {
-            "simulator" : "Cirq",
-            "exec_time" : exec_time,
-            "state_vector" : state_vector
+            "simulator": "Cirq",
+            "exec_time": exec_time,
+            "state_vector": state_vector,
         }
-    
+
     except Exception as e:
         return {"backend": "Cirq", "error": str(e)}
+
 
 def run_qiskit(qasm_code):
     try:
         qc = QuantumCircuit.from_qasm_str(qasm_code)
         qc.remove_final_measurements()
-        simulator = AerSimulator(method = "statevector")
+        simulator = AerSimulator(method="statevector")
         qc.save_statevector()
         transpiled = transpile(qc, simulator)
 
@@ -67,18 +73,23 @@ def run_qiskit(qasm_code):
         result = simulator.run(transpiled).result()
         exec_time = time.time() - start_time
 
-        state_vector = result.get_statevector().data.tolist()
+        raw_state_vector = result.get_statevector().data.tolist()
+        state_vector = []
+
+        for complex_num in raw_state_vector:
+            state_vector.append(
+                {"real": float(complex_num.real), "imag": float(complex_num.imag)}
+            )
 
         return {
             "backend": "Qiskit",
-            "exec_time" : exec_time,
-            "state_vector" : state_vector
+            "exec_time": exec_time,
+            "state_vector": state_vector,
         }
-    
 
     except Exception as e:
-        return {"backend" : "Qiskit", "error" : str(e)}
-    
+        return {"backend": "Qiskit", "error": str(e)}
+
 
 def run_pennylane(qasm_code):
     try:
@@ -87,25 +98,28 @@ def run_pennylane(qasm_code):
         n = qc.num_qubits
 
         pl_qfunc = pnl.from_qiskit(qc)
-        dev = pnl.device("default.qubit", wires = n)
+        dev = pnl.device("default.qubit", wires=n)
 
         @pnl.qnode(dev)
         def circuit():
             pl_qfunc()
             return pnl.state()
-        
+
         start_time = time.time()
-        result_state = circuit().tolist()
+        raw_result_state = circuit().tolist()
+        result_state = []
         exec_time = time.time() - start_time
 
+        for complex_num in raw_result_state:
+            result_state.append(
+                {"real": float(complex_num.real), "imag": float(complex_num.imag)}
+            )
+
         return {
-            "backend" : "Pennylane",
-            "exec_time" : exec_time,
-            "state_vector" : result_state 
+            "backend": "Pennylane",
+            "exec_time": exec_time,
+            "state_vector": result_state,
         }
-    
 
     except Exception as e:
-        return {"backend" : "Pennylane", "error" : str(e)}
-
-    
+        return {"backend": "Pennylane", "error": str(e)}
