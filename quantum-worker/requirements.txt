@@ -5,5 +5,4 @@ pennylane
 cirq
 numpy 
 python-dotenv
-
-
+pennylane-qiskit
