@@ -2,3 +2,5 @@ quantum-worker/.env
 quantum-worker/venv
 quantum-worker/services/__pycache__
 quantum-worker/utils/__pycache__
+auth-service/node_modules
+auth-service/.env
